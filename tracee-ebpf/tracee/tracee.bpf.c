@@ -1208,8 +1208,7 @@ static __always_inline int save_path_to_str_buf(buf_t *string_p, const struct pa
 
 static __always_inline int save_file_path_to_str_buf(buf_t *string_p, struct file* file)
 {
-    struct path f_path = get_path_from_file(file);
-    return save_path_to_str_buf(string_p, &f_path);
+    return save_path_to_str_buf(string_p, &file->f_path);
 }
 
 static __always_inline int save_dentry_path_to_str_buf(buf_t *string_p, struct dentry* dentry)
