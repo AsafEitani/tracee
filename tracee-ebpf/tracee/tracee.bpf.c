@@ -2415,6 +2415,7 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
         return -1;
     }
 
+    const char *parent_comm = get_task_parent_comm(task);
     int invoked_from_kernel = has_prefix("kworker/", get_task_parent_comm(task), 9);
 
     const char *filename = get_binprm_filename(bprm);
@@ -2458,7 +2459,8 @@ int tracepoint__sched__sched_process_exec(struct bpf_raw_tracepoint_args *ctx)
     // 2. fdpath - generated filename for execveat (after resolving dirfd)
 
     save_str_to_buf(submit_p, (void *)filename, DEC_ARG(0, *tags));
-    save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(1, *tags));
+    save_str_to_buf(submit_p, (void *)parent_comm, DEC_ARG(1, *tags));
+    //save_str_to_buf(submit_p, (void *)&string_p->buf[*off], DEC_ARG(1, *tags));
     save_args_str_arr_to_buf(submit_p, (void *)arg_start, (void *)arg_end, argc, DEC_ARG(2, *tags));
     //save_args_str_arr_to_buf(submit_p, (void *)env_start, (void *)env_end, envc, DEC_ARG(3, *tags));
     save_to_submit_buf(submit_p, &s_dev, sizeof(dev_t), DEV_T_T, DEC_ARG(4, *tags));
