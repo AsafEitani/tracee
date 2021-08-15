@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"sync"
 	"text/template"
 
 	"github.com/Masterminds/sprig"
@@ -39,7 +40,7 @@ func setupTemplate(inputTemplateFile string) (*template.Template, error) {
 	}
 }
 
-func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentType string, outputTemplate string) (chan types.Finding, error) {
+func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentType string, outputTemplate string, wg *sync.WaitGroup) (chan types.Finding, error) {
 	out := make(chan types.Finding)
 	var err error
 
@@ -55,7 +56,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 		return nil, fmt.Errorf("error preparing output template: %v", err)
 	}
 
-	go func(w io.Writer, tWebhook, tOutput *template.Template) {
+	go func(w io.Writer, tWebhook, tOutput *template.Template, wg *sync.WaitGroup) {
 		for res := range out {
 			switch res.Context.(type) {
 			case tracee.Event:
@@ -73,7 +74,8 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 				}
 			}
 		}
-	}(w, tWebhook, tOutput)
+		wg.Done()
+	}(w, tWebhook, tOutput, wg)
 	return out, nil
 }
 

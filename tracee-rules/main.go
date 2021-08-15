@@ -9,6 +9,7 @@ import (
 	"net/http/pprof"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -97,11 +98,12 @@ func main() {
 				return err
 			}
 
-			output, err := setupOutput(os.Stdout, c.String("webhook"), c.String("webhook-template"), c.String("webhook-content-type"), c.String("output-template"))
+			wg := sync.WaitGroup{}
+			output, err := setupOutput(os.Stdout, c.String("webhook"), c.String("webhook-template"), c.String("webhook-content-type"), c.String("output-template"), &wg)
 			if err != nil {
 				return err
 			}
-			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr)
+			e, err := engine.NewEngine(sigs, inputs, output, os.Stderr, &wg)
 			if err != nil {
 				return fmt.Errorf("constructing engine: %w", err)
 			}

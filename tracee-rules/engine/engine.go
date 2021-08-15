@@ -27,7 +27,7 @@ type Engine struct {
 	signaturesMutex sync.RWMutex
 	inputs          EventSources
 	output          chan types.Finding
-	waitGroup       sync.WaitGroup
+	waitGroup       *sync.WaitGroup
 }
 
 //EventSources is a bundle of input sources used to configure the Engine
@@ -37,12 +37,15 @@ type EventSources struct {
 
 // NewEngine creates a new rules-engine with the given arguments
 // inputs and outputs are given as channels created by the consumer
-func NewEngine(sigs []types.Signature, sources EventSources, output chan types.Finding, logWriter io.Writer) (*Engine, error) {
+func NewEngine(sigs []types.Signature, sources EventSources, output chan types.Finding, logWriter io.Writer, wg *sync.WaitGroup) (*Engine, error) {
 	if sources.Tracee == nil || output == nil || logWriter == nil {
 		return nil, fmt.Errorf("nil input received")
 	}
 	engine := Engine{}
-	engine.waitGroup = sync.WaitGroup{}
+	if wg == nil {
+		wg = &sync.WaitGroup{}
+	}
+	engine.waitGroup = wg
 	engine.logger = *log.New(logWriter, "", 0)
 	engine.inputs = sources
 	engine.output = output
@@ -114,7 +117,7 @@ func (engine *Engine) Start(done chan bool) {
 	defer engine.unloadAllSignatures()
 	engine.signaturesMutex.RLock()
 	for s, c := range engine.signatures {
-		go signatureStart(s, c, &engine.waitGroup)
+		go signatureStart(s, c, engine.waitGroup)
 	}
 	engine.signaturesMutex.RUnlock()
 	engine.consumeSources(done)
@@ -138,9 +141,14 @@ func (engine *Engine) matchHandler(res types.Finding) {
 
 // checkCompletion is a function that runs at the end of each input source
 // closing tracee-rules if no more pending input sources exists
-func (engine *Engine) checkCompletion() bool {
+func (engine *Engine) completed() bool {
 	if engine.inputs.Tracee == nil {
+		// Unload signatures and wait for detection completion
 		engine.unloadAllSignatures()
+		engine.waitGroup.Wait()
+		// Wait for the output to finish
+		engine.waitGroup.Add(1)
+		close(engine.output)
 		engine.waitGroup.Wait()
 		return true
 	}
@@ -170,7 +178,7 @@ func (engine *Engine) consumeSources(done <-chan bool) {
 				}
 				engine.signaturesMutex.RUnlock()
 				engine.inputs.Tracee = nil
-				if engine.checkCompletion() {
+				if engine.completed() {
 					return
 				}
 			} else if event != nil {
@@ -255,7 +263,7 @@ func (engine *Engine) LoadSignature(signature types.Signature) (string, error) {
 		engine.logger.Printf("error initializing signature %s: %v", metadata.Name, err)
 
 	}
-	go signatureStart(signature, c, &engine.waitGroup)
+	go signatureStart(signature, c, engine.waitGroup)
 	return metadata.ID, nil
 }
 
