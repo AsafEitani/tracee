@@ -250,7 +250,7 @@ func (p *gobEventPrinter) Error(err error) {
 }
 
 func (p *gobEventPrinter) Epilogue(stats external.Stats) {
-	err := p.outEnc.Encode(Stats)
+	err := p.outEnc.Encode(stats)
 	if err != nil {
 		p.Error(err)
 	}
