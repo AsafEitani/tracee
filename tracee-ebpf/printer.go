@@ -211,7 +211,13 @@ func (p jsonEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p jsonEventPrinter) Epilogue(stats external.Stats) {}
+func (p jsonEventPrinter) Epilogue(stats external.Stats) {
+	eBytes, err := json.Marshal(stats)
+	if err != nil {
+		p.Error(err)
+	}
+	fmt.Fprintln(p.out, string(eBytes))
+}
 
 func (p jsonEventPrinter) Close() {
 }
@@ -243,7 +249,12 @@ func (p *gobEventPrinter) Error(err error) {
 	fmt.Fprintf(p.err, "%v\n", err)
 }
 
-func (p *gobEventPrinter) Epilogue(stats external.Stats) {}
+func (p *gobEventPrinter) Epilogue(stats external.Stats) {
+	err := p.outEnc.Encode(Stats)
+	if err != nil {
+		p.Error(err)
+	}
+}
 
 func (p gobEventPrinter) Close() {
 }
