@@ -651,6 +651,19 @@ func (t *Tracee) populateBPFMaps() error {
 			}
 			// err = t.initTailCall(uint32(e), "sys_exit_tails", probFnName) // if ever needed
 		}
+
+		if e == Accept4EventID {
+			event, ok := EventsIDToEvent[e]
+			if !ok {
+				continue
+			}
+
+			probFnName := fmt.Sprintf("syscall__%s", event.Name)
+			err = t.initTailCall(uint32(e), "sys_exit_tails", probFnName)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return nil

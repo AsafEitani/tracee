@@ -2014,6 +2014,44 @@ out:
     return 0;
 }
 
+SEC("raw_tracepoint/sys_accept4")
+int syscall__accept4(void *ctx)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys)
+        return -1;
+
+    if (!event_chosen(SYSCALL_ACCEPT4))
+        return 0;
+
+    struct sockaddr *address = (struct sockaddr *)sys->args.args[1];
+    uint addr_len = (int)sys->args.args[2];
+    sa_family_t sa_fam = get_sockaddr_family(address);
+    if ( (sa_fam != AF_INET) && (sa_fam != AF_INET6) && (sa_fam != AF_UNIX)) {
+        return 0;
+    }
+
+    if (sa_fam == AF_INET) {
+        save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_in), 1);
+    }
+    else if (sa_fam == AF_INET6) {
+        save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_in6), 1);
+    }
+    else if (sa_fam == AF_UNIX) {
+        if (addr_len <= sizeof(struct sockaddr_un)) {
+            struct sockaddr_un sockaddr = {};
+            bpf_probe_read(&sockaddr, addr_len, (void *)address);
+            save_to_submit_buf(&data, (void *)&sockaddr, sizeof(struct sockaddr_un), 1);
+        }
+        else save_to_submit_buf(&data, (void *)address, sizeof(struct sockaddr_un), 1);
+    }
+    return events_perf_submit(&data, SYSCALL_ACCEPT4, 0);
+}
+
 SEC("raw_tracepoint/sys_execve")
 int syscall__execve(void *ctx)
 {
