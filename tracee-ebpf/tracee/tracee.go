@@ -431,7 +431,7 @@ func getParamType(paramType string) argType {
 		return alertT
 	case "slim_cred_t":
 		return credT
-	case "umode_t":
+	case "umode_t", "u16":
 		return u16T
 	default:
 		// Default to pointer (printed as hex) for unsupported types
@@ -672,6 +672,11 @@ func (t *Tracee) populateBPFMaps() error {
 			}
 		} else if e == DupEventID || e == Dup2EventID || e == Dup3EventID {
 			if err = t.initTailCall(eU32, "sys_exit_tails", "sys_dup_exit_tail"); err != nil {
+				return err
+			}
+		} else if e == Accept4EventID || e == AcceptEventID {
+			err = t.initTailCall(uint32(e), "sys_exit_tails", "syscall__accept4")
+			if err != nil {
 				return err
 			}
 		}

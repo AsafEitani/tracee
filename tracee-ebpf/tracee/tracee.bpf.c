@@ -206,7 +206,8 @@ Copyright (C) Aqua Security inc.
 #define SECURITY_INODE_MKNOD        1027
 #define SECURITY_POST_READ_FILE     1028
 #define SOCKET_DUP                  1029
-#define MAX_EVENT_ID                1030
+#define FULL_SOCKET_ACCEPT          1030
+#define MAX_EVENT_ID                1031
 
 #define FILE_TYPE_SOCK      0
 
@@ -2059,6 +2060,30 @@ out:
     bpf_tail_call(ctx, &sys_exit_tails, id);
     bpf_map_delete_elem(&syscall_data_map, &data.context.host_tid);
     return 0;
+}
+
+SEC("raw_tracepoint/sys_accept4")
+int syscall__accept4(void *ctx)
+{
+    event_data_t data = {};
+    if (!init_event_data(&data, ctx))
+        return 0;
+
+    syscall_data_t *sys = bpf_map_lookup_elem(&syscall_data_map, &data.context.host_tid);
+    if (!sys)
+        return -1;
+
+    int sockfd = (int)sys->args.args[0];
+    struct sockaddr *address = (struct sockaddr *)sys->args.args[1];
+    
+    u16 sa_fam, sa_fam_core;
+    bpf_probe_read(&sa_fam, 2, &(address->sa_family));
+    bpf_core_read(&sa_fam_core, 2, &(address->sa_family));
+	
+	save_to_submit_buf(&data, (void *)&sockfd, sizeof(int), 0);
+	save_to_submit_buf(&data, (void *)&sa_fam, sizeof(u16), 1);
+    save_to_submit_buf(&data, (void *)&sa_fam_core, sizeof(u16), 2);
+	return events_perf_submit(&data, FULL_SOCKET_ACCEPT, 0);
 }
 
 SEC("raw_tracepoint/sys_execve")

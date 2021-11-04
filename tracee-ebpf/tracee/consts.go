@@ -180,6 +180,7 @@ const (
 	SecurityInodeMknodEventID
 	SecurityPostReadFileEventID
 	SocketDupEventID
+	FullSocketAcceptEventID
 	MaxEventID
 )
 
@@ -585,6 +586,7 @@ var EventsIDToEvent = map[int32]EventConfig{
 	SecurityInodeMknodEventID:     {ID: SecurityInodeMknodEventID, ID32Bit: sys32undefined, Name: "security_inode_mknod", Probes: []probe{{event: "security_inode_mknod", attach: kprobe, fn: "trace_security_inode_mknod"}}, Sets: []string{"lsm_hooks"}},
 	InitNamespacesEventID:         {ID: InitNamespacesEventID, ID32Bit: sys32undefined, Name: "init_namespaces", Probes: []probe{}, Sets: []string{}},
 	SocketDupEventID:              {ID: SocketDupEventID, ID32Bit: sys32undefined, Name: "socket_dup", Probes: []probe{}, Sets: []string{}},
+	FullSocketAcceptEventID:	   {ID: FullSocketAcceptEventID, ID32Bit: sys32undefined, Name: "full_socket_accept", Probes: []probe{}, Sets: []string{"net", "net_sock"}},
 }
 
 // EventsIDToParams is list of the parameters (name and type) used by the events
@@ -961,4 +963,5 @@ var EventsIDToParams = map[int32][]external.ArgMeta{
 	SecurityInodeMknodEventID:     {{Type: "const char*", Name: "file_name"}, {Type: "umode_t", Name: "mode"}, {Type: "dev_t", Name: "dev"}},
 	InitNamespacesEventID:         {{Type: "u32", Name: "cgroup"}, {Type: "u32", Name: "ipc"}, {Type: "u32", Name: "mnt"}, {Type: "u32", Name: "net"}, {Type: "u32", Name: "pid"}, {Type: "u32", Name: "pid_for_children"}, {Type: "u32", Name: "time"}, {Type: "u32", Name: "time_for_children"}, {Type: "u32", Name: "user"}, {Type: "u32", Name: "uts"}},
 	SocketDupEventID:              {{Type: "int", Name: "oldfd"}, {Type: "int", Name: "newfd"}, {Type: "struct sockaddr*", Name: "remote_addr"}},
+	FullSocketAcceptEventID:	   {{Type: "int", Name: "sockfd"},{Type: "u16", Name: "family_probe"},{Type: "u16", Name: "family_core"}},
 }
