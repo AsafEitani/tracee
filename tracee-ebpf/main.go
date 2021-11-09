@@ -555,6 +555,8 @@ func prepareCapture(captureSlice []string) (tracee.CaptureConfig, error) {
 			capture.Module = true
 		} else if cap == "mem" {
 			capture.Mem = true
+		} else if cap == "bpf" {
+			capture.Bpf = true
 		} else if strings.HasPrefix(cap, "net=") {
 			iface := strings.TrimPrefix(cap, "net=")
 			if _, err := net.InterfaceByName(iface); err != nil {

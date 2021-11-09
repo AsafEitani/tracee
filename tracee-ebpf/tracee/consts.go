@@ -42,6 +42,7 @@ const (
 	configProcTreeFilter
 	configCaptureModules
 	configCgroupV1
+	configCaptureBpf
 )
 
 const (
@@ -91,6 +92,7 @@ const (
 	sendVfsWrite binType = iota + 1
 	sendMprotect
 	sendKernelModule
+	sendBpfObject
 )
 
 // argType is an enum that encodes the argument types that the BPF program may write to the shared buffer
