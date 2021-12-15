@@ -1,5 +1,6 @@
 #ifndef __VMLINUX_H__
 #define __VMLINUX_H__
+#define BPF_OBJ_NAME_LEN 16U
 
 #pragma clang attribute push (__attribute__((preserve_access_index)), apply_to = record)
 
@@ -718,6 +719,145 @@ enum kernel_read_file_id {
         READING_POLICY = 5,
         READING_X509_CERTIFICATE = 6,
         READING_MAX_ID = 7,
+};
+
+struct bpf_insn {
+	__u8	code;		/* opcode */
+	__u8	dst_reg:4;	/* dest register */
+	__u8	src_reg:4;	/* source register */
+	__s16	off;		/* signed offset */
+	__s32	imm;		/* signed immediate constant */
+};
+
+union bpf_attr {
+	struct { /* anonymous struct used by BPF_PROG_LOAD command */
+		__u32		prog_type;	/* one of enum bpf_prog_type */
+		__u32		insn_cnt;
+		__u64	insns;
+		__u64	license;
+		__u32		log_level;	/* verbosity level of verifier */
+		__u32		log_size;	/* size of user buffer */
+		__u64	log_buf;	/* user supplied buffer */
+		__u32		kern_version;	/* not used */
+		__u32		prog_flags;
+		char		prog_name[BPF_OBJ_NAME_LEN];
+		__u32		prog_ifindex;	/* ifindex of netdev to prep for */
+		/* For some prog types expected attach type must be known at
+		 * load time to verify attach type specific parts of prog
+		 * (context accesses, allowed helpers, etc).
+		 */
+		__u32		expected_attach_type;
+		__u32		prog_btf_fd;	/* fd pointing to BTF type data */
+		__u32		func_info_rec_size;	/* userspace bpf_func_info size */
+		__u64	func_info;	/* func info */
+		__u32		func_info_cnt;	/* number of bpf_func_info records */
+		__u32		line_info_rec_size;	/* userspace bpf_line_info size */
+		__u64	line_info;	/* line info */
+		__u32		line_info_cnt;	/* number of bpf_line_info records */
+		__u32		attach_btf_id;	/* in-kernel BTF type id to attach to */
+		union {
+			/* valid prog_fd to attach to bpf prog */
+			__u32		attach_prog_fd;
+			/* or valid module BTF object fd or 0 to attach to vmlinux */
+			__u32		attach_btf_obj_fd;
+		};
+		__u32		:32;		/* pad */
+		__u64	fd_array;	/* array of FDs */
+	};
+
+	struct { /* anonymous struct for BPF_BTF_LOAD */
+		__u64	btf;
+		__u64	btf_log_buf;
+		__u32		btf_size;
+		__u32		btf_log_size;
+		__u32		btf_log_level;
+	};
+} __attribute__((aligned(8)));
+
+struct btf_header {
+	__u16	magic;
+	__u8	version;
+	__u8	flags;
+	__u32	hdr_len;
+
+	/* All offsets are in bytes relative to the end of this header */
+	__u32	type_off;	/* offset of type section	*/
+	__u32	type_len;	/* length of type section	*/
+	__u32	str_off;	/* offset of string section	*/
+	__u32	str_len;	/* length of string section	*/
+};
+
+struct btf_type {
+	__u32 name_off;
+	/* "info" bits arrangement
+	 * bits  0-15: vlen (e.g. # of struct's members)
+	 * bits 16-23: unused
+	 * bits 24-27: kind (e.g. int, ptr, array...etc)
+	 * bits 28-30: unused
+	 * bit     31: kind_flag, currently used by
+	 *             struct, union and fwd
+	 */
+	__u32 info;
+	/* "size" is used by INT, ENUM, STRUCT, UNION and DATASEC.
+	 * "size" tells the size of the type it is describing.
+	 *
+	 * "type" is used by PTR, TYPEDEF, VOLATILE, CONST, RESTRICT,
+	 * FUNC, FUNC_PROTO and VAR.
+	 * "type" is a type_id referring to another type.
+	 */
+	union {
+		__u32 size;
+		__u32 type;
+	};
+};
+
+typedef struct {
+	int counter;
+} atomic_t;
+
+typedef struct refcount_struct {
+	atomic_t refs;
+} refcount_t;
+
+/**
+ * struct callback_head - callback structure for use with RCU and task_work
+ * @next: next update requests in a list
+ * @func: actual update function to call after the grace period.
+ *
+ * The struct is aligned to size of pointer. On most architectures it happens
+ * naturally due ABI requirements, but some architectures (like CRIS) have
+ * weird ABI and we need to ask it explicitly.
+ *
+ * The alignment is required to guarantee that bit 0 of @next will be
+ * clear under normal conditions -- as long as we use call_rcu() or
+ * call_srcu() to queue the callback.
+ *
+ * This guarantee is important for few reasons:
+ *  - future call_rcu_lazy() will make use of lower bits in the pointer;
+ *  - the structure shares storage space in struct page with @compound_head,
+ *    which encode PageTail() in bit 0. The guarantee is needed to avoid
+ *    false-positive PageTail().
+ */
+struct callback_head {
+	struct callback_head *next;
+	void (*func)(struct callback_head *head);
+} __attribute__((aligned(sizeof(void *))));
+#define rcu_head callback_head
+
+struct btf {
+	void *data;
+	struct btf_type **types;
+	u32 *resolved_ids;
+	u32 *resolved_sizes;
+	const char *strings;
+	void *nohdr_data;
+	struct btf_header hdr;
+	u32 nr_types;
+	u32 types_size;
+	u32 data_size;
+	refcount_t refcnt;
+	u32 id;
+	struct rcu_head rcu;
 };
 
 #include <struct_flavors.h>

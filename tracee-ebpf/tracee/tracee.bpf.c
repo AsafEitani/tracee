@@ -604,16 +604,6 @@ static __always_inline const struct bpf_insn * get_attr_insns(union bpf_attr *at
     return (const struct bpf_insn *)READ_KERN(attr->insns);
 }
 
-static __always_inline u32 get_attr_insn_cnt(union bpf_attr *attr)
-{
-    return READ_KERN(attr->insn_cnt);
-}
-
-static __always_inline const struct bpf_insn * get_attr_insns(union bpf_attr *attr)
-{
-    return (const struct bpf_insn *)READ_KERN(attr->insns);
-}
-
 static __always_inline u32 get_attr_btf_fd(union bpf_attr *attr)
 {
     return READ_KERN(attr->prog_btf_fd);
@@ -4063,10 +4053,7 @@ int BPF_KPROBE(trace_security_bpf)
         }
 
         const char *strings = (const char *)READ_KERN(btf->strings);
-        const char fmt_str23[] = "--- strings is at %p\n";
-        bpf_trace_printk(fmt_str23, sizeof(fmt_str23), strings);
         if (strings == NULL) {
-            bpf_trace_printk(fmt_str2, sizeof(fmt_str2), 4);
             return 0;
         }
 
