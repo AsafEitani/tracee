@@ -407,6 +407,8 @@ typedef struct bin_args {
     u8 iov_idx;
     u8 iov_len;
     struct iovec *vec;
+    u8 file_count;
+    struct bin_args *next_bin_args;
 } bin_args_t;
 
 typedef struct simple_buf {
@@ -3539,6 +3541,13 @@ static __always_inline u32 send_bin_helper(void* ctx, struct bpf_map_def *prog_a
     }
 
     bpf_map_delete_elem(&bin_args_map, &id);
+    if (bin_args->file_count == 1) {
+        bin_args_t *next = READ_KERN(bin_args->next_bin_args);
+        next->file_count = bin_args->file_count - 1;
+        bpf_map_update_elem(&bin_args_map, &id, next, BPF_ANY);
+        bpf_tail_call(ctx, prog_array, tail_call);
+        return 1;
+    }
     return 0;
 }
 
