@@ -551,6 +551,7 @@ struct btf {
     u32 nr_types; /* includes VOID for base BTF */
     // ...
 };
+
 #endif
 
 /*================================= MAPS =====================================*/
@@ -4037,6 +4038,38 @@ int BPF_KPROBE(trace_security_bpf)
         const struct bpf_insn *insns = get_attr_insns(attr);
         unsigned int insn_size = (unsigned int)(sizeof(struct bpf_insn) * insn_cnt);
 
+        // TODO delete
+        struct bpf_line_info *line_info = (struct bpf_line_info *)READ_KERN(attr->line_info);
+        u32 line_offset = READ_USER(line_info->line_off);
+
+        char *prog_name = (char *)READ_KERN(attr->prog_name);
+        const char fmt_str22[] = "bpf program - %s ------\n";
+        bpf_trace_printk(fmt_str22, sizeof(fmt_str22), prog_name);
+
+        const char fmt_str[] = "line_offset is %d\n";
+        bpf_trace_printk(fmt_str, sizeof(fmt_str), line_offset);
+
+
+        u32 line_info_count = READ_KERN(attr->line_info_cnt);
+        const char fmt_str4[] = "line_info_count is %d\n";
+        bpf_trace_printk(fmt_str4, sizeof(fmt_str4), line_info_count);
+
+        struct bpf_line_info last_line_info;
+        void *last_line_info_ptr = ((void *)line_info) + ((line_info_count - 1) * sizeof(struct bpf_line_info));
+        bpf_core_read_user((void *)&last_line_info, sizeof(struct bpf_line_info), last_line_info_ptr);
+        const char fmt_str3[] = "last_line_info.line_off is %d\n";
+        bpf_trace_printk(fmt_str3, sizeof(fmt_str3), last_line_info.line_off);
+        if (!last_line_info.line_off) {
+            return 0;
+        }
+
+        const char fmt_str8[] = "last line length is %d\n";
+        bpf_trace_printk(fmt_str8, sizeof(fmt_str8), ((last_line_info.line_col) & 0x3ff));
+
+        u64 strings_size = last_line_info.line_off - line_offset + ((last_line_info.line_col) & 0x3ff);
+        const char fmt_str6[] = "strings_size is %d\n";
+        bpf_trace_printk(fmt_str6, sizeof(fmt_str6), strings_size);
+
         // C code extraction
         u32 btf_fd = get_attr_btf_fd(attr);
         struct file *btf_file = get_struct_file_from_fd(btf_fd);
@@ -4056,12 +4089,26 @@ int BPF_KPROBE(trace_security_bpf)
         if (strings == NULL) {
             return 0;
         }
+        if (last_line_info.line_off < line_offset) {
+            bin_args.type = SEND_MPROTECT;
+            bpf_probe_read(bin_args.metadata, sizeof(u64), &data.context.ts);
+            strings = 
+            bin_args.ptr = (char *)strings + last_line_info.line_off;
+            bin_args.start_off = 0;
+            bin_args.full_size = line_offset - last_line_info.line_off;
+
+            bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
+            bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);
+        } 
+        
+        strings = strings + line_offset;
+        
 
         bin_args.type = SEND_MPROTECT;
         bpf_probe_read(bin_args.metadata, sizeof(u64), &data.context.ts);
         bin_args.ptr = (char *)strings;
         bin_args.start_off = 0;
-        bin_args.full_size = btf_header.str_len;
+        bin_args.full_size = strings_size;
 
         bpf_map_update_elem(&bin_args_map, &id, &bin_args, BPF_ANY);
         bpf_tail_call(ctx, &prog_array, TAIL_SEND_BIN);

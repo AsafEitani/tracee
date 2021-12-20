@@ -860,6 +860,13 @@ struct btf {
 	struct rcu_head rcu;
 };
 
+struct bpf_line_info {
+	__u32	insn_off;
+	__u32	file_name_off;
+	__u32	line_off;
+	__u32	line_col;
+};
+
 #include <struct_flavors.h>
 
 #pragma clang attribute pop
