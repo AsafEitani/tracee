@@ -1,3 +1,3 @@
-module github.com/aquasecurity/tracee/types
+module github.com/AsafEitani/tracee/types
 
 go 1.17
