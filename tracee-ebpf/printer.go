@@ -240,6 +240,7 @@ func (p *gobEventPrinter) Init() error {
 func (p *gobEventPrinter) Preamble() {}
 
 func (p *gobEventPrinter) Print(event external.Event) {
+	p.Error(fmt.Errorf("%+v\n", event))
 	err := p.outEnc.Encode(event)
 	if err != nil {
 		p.Error(err)
