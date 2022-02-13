@@ -135,6 +135,7 @@ func (engine *Engine) unloadAllSignatures() {
 
 // matchHandler is a function that runs when a signature is matched
 func (engine *Engine) matchHandler(res types.Finding) {
+	engine.logger.Printf("%+v\n", res)
 	engine.output <- res
 }
 
