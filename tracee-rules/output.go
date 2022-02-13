@@ -59,6 +59,7 @@ func setupOutput(w io.Writer, webhook string, webhookTemplate string, contentTyp
 		for res := range out {
 			switch res.Context.(type) {
 			case tracee.Event:
+				log.Printf("%+v\n", res)
 				if err := tOutput.Execute(w, res); err != nil {
 					log.Printf("error writing to output: %v", err)
 				}
