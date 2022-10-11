@@ -3670,8 +3670,9 @@ int BPF_KPROBE(trace_do_exit)
 SEC("uprobe/trigger_syscall_event")
 int uprobe_syscall_trigger(struct pt_regs *ctx)
 {
-    u64 magic_num = 0;
+    u64 tracee_pid = 0;
     u64 caller_ctx_id = 0;
+    u64 tracee_pid = 0;
 
     // clang-format off
     //
@@ -3683,16 +3684,18 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
 
     #if defined(bpf_target_x86)
         // go1.17, go1.18, go 1.19
-        magic_num = ctx->bx;                                          // 1st arg
-        caller_ctx_id = ctx->cx;                                      // 2nd arg
+        tracee_pid = ctx->cx;                                         // 2nd arg
+        caller_ctx_id = ctx->dx;                                      // 3rd arg
     #elif defined(bpf_target_arm64)
         // go1.17
         bpf_probe_read(&magic_num, 8, ((void *) ctx->sp) + 16);       // 1st arg
-        bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 24);   // 2nd arg
+        bpf_probe_read(&tracee_pid, 8, ((void *) ctx->sp) + 24);      // 2nd arg
+        bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 32);   // 3rd arg
         if (magic_num != UPROBE_MAGIC_NUMBER) {
             // go1.18, go 1.19
             magic_num = ctx->user_regs.regs[1];                       // 1st arg
-            caller_ctx_id = ctx->user_regs.regs[2];                   // 2nd arg
+            tracee_pid = ctx->user_regs.regs[2];                      // 2nd arg
+            caller_ctx_id = ctx->user_regs.regs[3];                   // 3rd arg
         }
     #else
         return 0;
@@ -3701,6 +3704,10 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
 
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
+        return 0;
+
+    // uprobe was triggered from other tracee instance
+    if (data.config->tracee_pid != tracee_pid)
         return 0;
 
     int key = 0;
@@ -3743,6 +3750,7 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 {
     u64 magic_num = 0;
     u64 caller_ctx_id = 0;
+    u64 tracee_pid = 0;
     u64 *address_array = NULL;
     u64 struct_address;
 
@@ -3756,19 +3764,21 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 
     #if defined(bpf_target_x86)
         // go1.17, go1.18, go 1.19
-        magic_num = ctx->bx;                                          // 1st arg
-        caller_ctx_id = ctx->cx;                                      // 2nd arg
-        address_array = ((void *) ctx->sp + 8);                       // 3rd arg
+        tracee_pid = ctx->cx;                                         // 2nd arg
+        caller_ctx_id = ctx->dx;                                      // 3rd arg
+        address_array = ((void *) ctx->sp + 8);                       // 4th arg
     #elif defined(bpf_target_arm64)
         // go1.17
         bpf_probe_read(&magic_num, 8, ((void *) ctx->sp) + 16);       // 1st arg
-        bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 24);   // 2nd arg
-        address_array = ((void *) ctx->sp + 32);                      // 3rd arg
+        bpf_probe_read(&tracee_pid, 8, ((void *) ctx->sp) + 24);      // 2nd arg
+        bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 32);   // 3rd arg
+        address_array = ((void *) ctx->sp + 32);                      // 4th arg
         if (magic_num != UPROBE_MAGIC_NUMBER) {
-            // go1.18 and go1.19
+            // go1.18, go 1.19
             magic_num = ctx->user_regs.regs[1];                       // 1st arg
-            caller_ctx_id = ctx->user_regs.regs[2];                   // 2nd arg
-            address_array = ((void *) ctx->sp + 8);                   // 3rd arg
+            tracee_pid = ctx->user_regs.regs[2];                      // 2nd arg
+            caller_ctx_id = ctx->user_regs.regs[3];                   // 3rd arg
+            address_array = ((void *) ctx->sp + 8);                   // 4th arg
         }
     #else
         return 0;
@@ -3777,6 +3787,10 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
 
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
+        return 0;
+
+    // uprobe was triggered from other tracee instance
+    if (data.config->tracee_pid != tracee_pid)
         return 0;
 
     u32 count_off = data.buf_off + 1;

@@ -1311,6 +1311,7 @@ func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) {
 	eventHandle := t.triggerContexts.Store(event)
 	t.triggerSyscallsIntegrityCheckCall(
 		uProbeMagicNumber,
+		uint64(os.Getpid()),
 		uint64(eventHandle),
 	)
 }
@@ -1318,6 +1319,7 @@ func (t *Tracee) triggerSyscallsIntegrityCheck(event trace.Event) {
 //go:noinline
 func (t *Tracee) triggerSyscallsIntegrityCheckCall(
 	magicNumber uint64, // 1st arg: allow handler to detect calling convention
+	traceePid uint64, // 2nd arg: used to determine if relevant to current tracee instance
 	eventHandle uint64) {
 }
 
@@ -1339,6 +1341,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 	eventHandle := t.triggerContexts.Store(event)
 	t.triggerSeqOpsIntegrityCheckCall(
 		uProbeMagicNumber,
+		uint64(os.Getpid()),
 		uint64(eventHandle),
 		seqOpsPointers,
 	)
@@ -1347,6 +1350,7 @@ func (t *Tracee) triggerSeqOpsIntegrityCheck(event trace.Event) {
 //go:noinline
 func (t *Tracee) triggerSeqOpsIntegrityCheckCall(
 	magicNumber uint64, // 1st arg: allow handler to detect calling convention
+	traceePid uint64, // 2nd arg: used to determine if relevant to current tracee instance
 	eventHandle uint64,
 	seqOpsStruct [len(derive.NetSeqOps)]uint64) error {
 	return nil
