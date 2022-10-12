@@ -34,6 +34,7 @@ func NewContext() *context {
 }
 
 func (store *context) Store(event trace.Event) uint64 {
+	fmt.Printf("Stored %+v - map: %+v\n", event, store.store)
 	id := uint64(store.counter.Read())
 	store.counter.Increment(1)
 	store.mutex.Lock()
@@ -43,6 +44,7 @@ func (store *context) Store(event trace.Event) uint64 {
 }
 
 func (store *context) Get(id uint64) (trace.Event, bool) {
+	fmt.Printf("Get %d - map: %+v\n", id, store.store)
 	store.mutex.RLock()
 	contextEvent, ok := store.store[id]
 	store.mutex.RUnlock()

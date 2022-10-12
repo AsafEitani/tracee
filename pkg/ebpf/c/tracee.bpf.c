@@ -3670,7 +3670,6 @@ int BPF_KPROBE(trace_do_exit)
 SEC("uprobe/trigger_syscall_event")
 int uprobe_syscall_trigger(struct pt_regs *ctx)
 {
-    u64 tracee_pid = 0;
     u64 caller_ctx_id = 0;
     u64 tracee_pid = 0;
 
@@ -3685,7 +3684,7 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
     #if defined(bpf_target_x86)
         // go1.17, go1.18, go 1.19
         tracee_pid = ctx->cx;                                         // 2nd arg
-        caller_ctx_id = ctx->dx;                                      // 3rd arg
+        caller_ctx_id = ctx->di;                                      // 3rd arg
     #elif defined(bpf_target_arm64)
         // go1.17
         bpf_probe_read(&magic_num, 8, ((void *) ctx->sp) + 16);       // 1st arg
@@ -3705,6 +3704,10 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
     event_data_t data = {};
     if (!init_event_data(&data, ctx))
         return 0;
+
+//    const char fmt_str[] = "pid %d regs: %d %d";
+//
+//    bpf_trace_printk(fmt_str, sizeof(fmt_str), tracee_pid, si, di);
 
     // uprobe was triggered from other tracee instance
     if (data.config->tracee_pid != tracee_pid)
