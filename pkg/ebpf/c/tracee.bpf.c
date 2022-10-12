@@ -3769,7 +3769,7 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
     #if defined(bpf_target_x86)
         // go1.17, go1.18, go 1.19
         tracee_pid = ctx->cx;                                         // 2nd arg
-        caller_ctx_id = ctx->dx;                                      // 3rd arg
+        caller_ctx_id = ctx->di;                                      // 3rd arg
         address_array = ((void *) ctx->sp + 8);                       // 4th arg
     #elif defined(bpf_target_arm64)
         // go1.17
