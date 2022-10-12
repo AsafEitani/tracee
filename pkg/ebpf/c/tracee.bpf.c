@@ -3672,6 +3672,7 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
 {
     u64 caller_ctx_id = 0;
     u64 tracee_pid = 0;
+    u64 magic_num = 0;
 
     // clang-format off
     //
