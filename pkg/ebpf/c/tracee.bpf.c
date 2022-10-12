@@ -3776,7 +3776,7 @@ int uprobe_seq_ops_trigger(struct pt_regs *ctx)
         bpf_probe_read(&magic_num, 8, ((void *) ctx->sp) + 16);       // 1st arg
         bpf_probe_read(&tracee_pid, 8, ((void *) ctx->sp) + 24);      // 2nd arg
         bpf_probe_read(&caller_ctx_id, 8, ((void *) ctx->sp) + 32);   // 3rd arg
-        address_array = ((void *) ctx->sp + 32);                      // 4th arg
+        address_array = ((void *) ctx->sp + 40);                      // 4th arg
         if (magic_num != UPROBE_MAGIC_NUMBER) {
             // go1.18, go 1.19
             magic_num = ctx->user_regs.regs[1];                       // 1st arg
