@@ -4115,10 +4115,6 @@ int uprobe_syscall_trigger(struct pt_regs *ctx)
         }
 
         syscall_addr = READ_KERN(syscall_table_addr[*syscall_num_p]);
-        if (syscall_addr == 0) {
-            return 0;
-        }
-
         syscall_address[i] = syscall_addr;
     }
     save_u64_arr_to_buf(&data, (const u64 *) syscall_address, NUMBER_OF_SYSCALLS_TO_CHECK, 0);
@@ -8001,6 +7997,7 @@ CGROUP_SKB_HANDLE_FUNCTION(proto_udp_dns)
 
     if (neteventctx->md.submit & SUB_NET_PACKET_DNS)
         cgroup_skb_submit_event(ctx, neteventctx, NET_PACKET_DNS, FULL);
+
 
     return 1; // NOTE: might block DNS here if needed (return 0)
 }

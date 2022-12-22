@@ -31,6 +31,9 @@ func deriveDetectHookedSyscallArgs(kernelSymbols *helpers.KernelSymbolTable) der
 func analyzeHookedAddresses(addresses []uint64, kernelSymbols *helpers.KernelSymbolTable) ([]trace.HookedSymbolData, error) {
 	hookedSyscalls := make([]trace.HookedSymbolData, 0)
 	for idx, syscallsAddress := range addresses {
+		if syscallsAddress == 0 {
+			continue
+		}
 		InTextSegment, err := kernelSymbols.TextSegmentContains(syscallsAddress)
 		if err != nil {
 			continue
