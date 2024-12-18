@@ -1,7 +1,7 @@
-github.com/aquasecurity/tracee v0.22.2 h1:YRUQmGZBMHEaIGEVzokAdvQc/r7b0e0102wzzn5tc5c=
-github.com/aquasecurity/tracee v0.22.2/go.mod h1:H5WZzjnNDmgaa4GRJjZUYvQ/QU93iXrMx0RIp+Ol+F0=
-github.com/aquasecurity/tracee/types v0.0.0-20241008181102-d40bc1f81863 h1:domVTTQICTuCvX+ZW5EjvdUBz8EH7FedBj5lRqwpgf4=
-github.com/aquasecurity/tracee/types v0.0.0-20241008181102-d40bc1f81863/go.mod h1:Jwh9OOuiMHXDoGQY12N9ls5YB+j1FlRcXvFMvh1CmIU=
+github.com/aquasecurity/tracee v0.22.4 h1:gE/7gswlxXLGCVZ6PkZIhcJPKS5JYhbl+4dU3PutR0Y=
+github.com/aquasecurity/tracee v0.22.4/go.mod h1:Tw0ifO59jYA86+350ubECVkiqMfvY+x/yYiztvgPpNo=
+github.com/aquasecurity/tracee/types v0.0.0-20241011005226-27f2cbdf6bd7 h1:6s4t+6UK7kMn2iTsPPooit4k5T22nmFcIguLRkWvmzk=
+github.com/aquasecurity/tracee/types v0.0.0-20241011005226-27f2cbdf6bd7/go.mod h1:Jwh9OOuiMHXDoGQY12N9ls5YB+j1FlRcXvFMvh1CmIU=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
