@@ -188,7 +188,12 @@ func (t *Tracee) queueEvents(ctx context.Context, in <-chan *trace.Event) (chan 
 			default:
 				event := t.config.Cache.Dequeue() // may block if queue is empty
 				if event != nil {
-					out <- event
+					select {
+					case out <- event:
+					default:
+						chanLen := len(out)
+						logger.Errorw(fmt.Sprintf("channel out from queue is full - %d", chanLen))
+					}
 				}
 			}
 		}
@@ -346,6 +351,9 @@ func (t *Tracee) decodeEvents(ctx context.Context, sourceChan chan []byte) (<-ch
 				_ = t.stats.Test3Count.Increment()
 			case <-ctx.Done():
 				return
+			default:
+				chanLen := len(out)
+				logger.Errorw(fmt.Sprintf("channel out from decode is full - %d", chanLen))
 			}
 		}
 	}()
@@ -546,6 +554,9 @@ func (t *Tracee) processEvents(ctx context.Context, in <-chan *trace.Event) (
 			case out <- event:
 			case <-ctx.Done():
 				return
+			default:
+				chanLen := len(out)
+				logger.Errorw(fmt.Sprintf("channel out from processEvents is full - %d", chanLen))
 			}
 
 		}
@@ -618,7 +629,12 @@ func (t *Tracee) deriveEvents(ctx context.Context, in <-chan *trace.Event) (
 
 					// Process derived events
 					t.processEvent(event)
-					out <- event
+					select {
+					case out <- event:
+					default:
+						chanLen := len(out)
+						logger.Errorw(fmt.Sprintf("channel out from deriveEvents is full - %d", chanLen))
+					}
 				}
 			case <-ctx.Done():
 				return

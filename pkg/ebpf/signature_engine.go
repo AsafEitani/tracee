@@ -2,6 +2,7 @@ package ebpf
 
 import (
 	"context"
+	"fmt"
 	"slices"
 
 	"github.com/aquasecurity/tracee/pkg/containers"
@@ -97,10 +98,18 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 
 			// pass the event to the sink stage, if the event is also marked as emit
 			// it will be sent to print by the sink stage
-			out <- event
+			select {
+			case out <- event:
+			default:
+				logger.Errorw(fmt.Sprintf("channel out from engineEvents is full - %d", len(out)))
+			}
 
 			// send the copied event to the rules engine
-			engineInput <- eventCopy.ToProtocol()
+			select {
+			case engineInput <- eventCopy.ToProtocol():
+			default:
+				logger.Errorw(fmt.Sprintf("channel engineInput from engineEvents is full - %d", len(engineInput)))
+			}
 		}
 
 		for {
@@ -137,7 +146,11 @@ func (t *Tracee) engineEvents(ctx context.Context, in <-chan *trace.Event) (<-ch
 					continue
 				}
 
-				engineOutputEvents <- event
+				select {
+				case engineOutputEvents <- event:
+				default:
+					logger.Errorw(fmt.Sprintf("channel engineOutputEvents from engineEvents is full - %d", len(engineOutputEvents)))
+				}
 			case <-ctx.Done():
 				return
 			}

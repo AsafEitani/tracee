@@ -101,6 +101,7 @@ package sorting
 
 import (
 	gocontext "context"
+	"fmt"
 	"math"
 	"sync"
 	"time"
@@ -216,7 +217,12 @@ func (sorter *EventsChronologicalSorter) sendEvents(outputChan chan<- *trace.Eve
 				sorter.errorChan <- err
 			}
 		} else {
-			outputChan <- extractionEvent
+			select {
+			case outputChan <- extractionEvent:
+			default:
+				chanLen := len(outputChan)
+				logger.Errorw(fmt.Sprintf("channel out from sorting is full - %d", chanLen))
+			}
 		}
 	}
 }

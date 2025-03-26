@@ -2,6 +2,7 @@ package ebpf
 
 import (
 	gocontext "context"
+	"fmt"
 	"sync"
 
 	"github.com/aquasecurity/tracee/pkg/cgroup"
@@ -97,7 +98,11 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				if (event.Container.ID == "" || event.Container.Name != "") &&
 					eventID != events.CgroupMkdir &&
 					eventID != events.CgroupRmdir {
-					out <- event
+					select {
+					case out <- event:
+					default:
+						logger.Errorw(fmt.Sprintf("channel out from enrichContainerEvents1 is full - %d", len(out)))
+					}
 					continue
 				}
 				cgroupId := uint64(event.CgroupID)
@@ -107,23 +112,39 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 					isHid, err := isCgroupEventInHid(event, t.containers)
 					if err != nil {
 						logger.Errorw("cgroup_mkdir event skipped enrichment: couldn't get cgroup hid", "error", err)
-						out <- event
+						select {
+						case out <- event:
+						default:
+							logger.Errorw(fmt.Sprintf("channel out from enrichContainerEvents2 is full - %d", len(out)))
+						}
 						continue
 					}
 					if !isHid {
-						out <- event
+						select {
+						case out <- event:
+						default:
+							logger.Errorw(fmt.Sprintf("channel out from enrichContainerEvents3 is full - %d", len(out)))
+						}
 						continue
 					}
 					cgroupId, err = parse.ArgVal[uint64](event.Args, "cgroup_id")
 					if err != nil {
 						logger.Errorw("cgroup_mkdir event failed to trigger enrichment: couldn't get cgroup_id", "error", err, "event_name", event.EventName)
-						out <- event
+						select {
+						case out <- event:
+						default:
+							logger.Errorw(fmt.Sprintf("channel out from enrichContainerEvents4 is full - %d", len(out)))
+						}
 						continue
 					}
 				}
 				// CgroupRmdir: clean up remaining events and maps
 				if eventID == events.CgroupRmdir {
-					queueClean <- event
+					select {
+					case queueClean <- event:
+					default:
+						logger.Errorw(fmt.Sprintf("channel queueClean from enrichContainerEvents5 is full - %d", len(queueClean)))
+					}
 					continue
 				}
 				// make sure a queue channel exists for this cgroupId
@@ -145,7 +166,11 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				// enqueue the event and schedule the operation
 				queues[cgroupId] <- event
 				bLock.RUnlock()
-				queueReady <- cgroupId
+				select {
+				case queueReady <- cgroupId:
+				default:
+					logger.Errorw(fmt.Sprintf("channel out from enrichContainerEvents6 is full - %d", len(out)))
+				}
 			case <-ctx.Done():
 				return
 			}
@@ -189,7 +214,11 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 								enrichEvent(event, i.result)
 							}
 						}
-						out <- event
+						select {
+						case out <- event:
+						default:
+							logger.Errorw(fmt.Sprintf("channel out from enrichContainerEvents7 is full - %d", len(out)))
+						}
 					} // TODO: place a unlikely to happen error in the printer
 				}
 				bLock.RUnlock()
@@ -209,7 +238,11 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 				cgroupId, err := parse.ArgVal[uint64](event.Args, "cgroup_id")
 				if err != nil {
 					logger.Errorw("cgroup_rmdir event failed to trigger enrich queue clean: couldn't get cgroup_id", "error", err, "event_name", event.EventName)
-					out <- event
+					select {
+					case out <- event:
+					default:
+						logger.Errorw(fmt.Sprintf("channel out from enrichContainerEvents8 is full - %d", len(out)))
+					}
 					continue
 				}
 				logger.Debugw("triggered enrich queue clean", "cgroup_id", cgroupId)
@@ -224,7 +257,11 @@ func (t *Tracee) enrichContainerEvents(ctx gocontext.Context, in <-chan *trace.E
 						delete(enrichDone, cgroupId)
 						delete(enrichInfo, cgroupId)
 						delete(queues, cgroupId)
-						out <- event
+						select {
+						case out <- event:
+						default:
+							logger.Errorw(fmt.Sprintf("channel out from enrichContainerEvents9 is full - %d", len(out)))
+						}
 					}
 				}
 				bLock.Unlock()
